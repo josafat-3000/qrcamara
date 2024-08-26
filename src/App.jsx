@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import QRCode from "qrcode.react";
 import { BrowserMultiFormatReader } from '@zxing/library';
 
@@ -6,6 +6,7 @@ function App() {
   const [text, setText] = useState("");
   const [qrValue, setQrValue] = useState("");
   const [scanResult, setScanResult] = useState(null);
+  const qrRef = useRef();
 
   const handleGenerateQR = () => {
     setQrValue(text);
@@ -23,6 +24,28 @@ function App() {
     });
   };
 
+  const handleShareQR = async () => {
+    try {
+      const canvas = qrRef.current.querySelector("canvas");
+      const qrImageURL = canvas.toDataURL("image/png");
+
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Código QR',
+          text: 'Mira este código QR generado:',
+          files: [
+            new File([await (await fetch(qrImageURL)).blob()], 'qr-code.png', { type: 'image/png' })
+          ],
+        });
+        console.log('Compartido exitosamente');
+      } else {
+        console.log('Web Share API no soportada en este navegador.');
+      }
+    } catch (error) {
+      console.error('Error al compartir:', error);
+    }
+  };
+
   return (
     <div style={{ padding: "20px" }}>
       <h1>Generar y Leer Códigos QR</h1>
@@ -36,9 +59,12 @@ function App() {
           placeholder="Ingresa el texto"
         />
         <button onClick={handleGenerateQR}>Generar QR</button>
-        <div style={{ marginTop: "20px" }}>
+        <div style={{ marginTop: "20px" }} ref={qrRef}>
           <QRCode value={qrValue} size={200} />
         </div>
+        <button onClick={handleShareQR} style={{ marginTop: "20px" }}>
+          Compartir QR
+        </button>
       </div>
 
       <div style={{ marginTop: "40px" }}>
